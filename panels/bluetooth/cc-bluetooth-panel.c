@@ -47,7 +47,6 @@ struct _CcBluetoothPanel {
 	GDBusProxy              *rfkill;
 	GDBusProxy              *properties;
 	gboolean                 airplane_mode;
-	gboolean                 bt_airplane_mode;
 	gboolean                 hardware_airplane_mode;
 	gboolean                 has_airplane_mode;
 };
@@ -86,14 +85,14 @@ airplane_mode_changed_cb (GObject *source_object,
 		if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
 			CcBluetoothPanel *self = CC_BLUETOOTH_PANEL (user_data);
 			gboolean state = gtk_switch_get_active (self->enable_switch);
-			g_warning ("Failed to change Bluetooth killswitch state to %s: %s",
+			g_warning ("Failed to change Bluetooth state to %s: %s",
 				   state ? "on" : "off", error->message);
 		}
 	} else {
 		CcBluetoothPanel *self = CC_BLUETOOTH_PANEL (user_data);
 		gboolean state = gtk_switch_get_active (self->enable_switch);
 
-		g_debug ("Changed Bluetooth killswitch state to %s",
+		g_debug ("Changed Bluetooth state to %s",
 			 state ? "on" : "off");
 
 		gtk_switch_set_state (self->enable_switch, state);
@@ -125,8 +124,8 @@ adapter_status_changed_cb (CcBluetoothPanel *self)
 	gboolean sensitive, powered;
 	GtkWidget *page;
 
-	g_debug ("Updating airplane mode: BluetoothHasAirplaneMode %d, BluetoothHardwareAirplaneMode %d, BluetoothAirplaneMode %d, AirplaneMode %d",
-		 self->has_airplane_mode, self->hardware_airplane_mode, self->bt_airplane_mode, self->airplane_mode);
+	g_debug ("Updating airplane mode: BluetoothHasAirplaneMode %d, BluetoothHardwareAirplaneMode %d, AirplaneMode %d",
+		 self->has_airplane_mode, self->hardware_airplane_mode, self->airplane_mode);
 
 	valign = GTK_ALIGN_CENTER;
 
@@ -145,8 +144,7 @@ adapter_status_changed_cb (CcBluetoothPanel *self)
 		sensitive = FALSE;
 		powered = FALSE;
 		page = GTK_WIDGET (self->airplane_page);
-	} else if (self->bt_airplane_mode ||
-		   !bluetooth_settings_widget_get_default_adapter_powered (self->settings_widget)) {
+	} else if (!bluetooth_settings_widget_get_default_adapter_powered (self->settings_widget)) {
 		g_debug ("Default adapter is unpowered");
 		sensitive = TRUE;
 		powered = FALSE;
@@ -172,15 +170,11 @@ static void
 airplane_mode_changed (CcBluetoothPanel *self)
 {
 	g_autoptr(GVariant) airplane_mode = NULL;
-	g_autoptr(GVariant) bluetooth_airplane_mode = NULL;
 	g_autoptr(GVariant) bluetooth_hardware_airplane_mode = NULL;
 	g_autoptr(GVariant) bluetooth_has_airplane_mode = NULL;
 
 	airplane_mode = g_dbus_proxy_get_cached_property (self->rfkill, "AirplaneMode");
 	self->airplane_mode = g_variant_get_boolean (airplane_mode);
-
-	bluetooth_airplane_mode = g_dbus_proxy_get_cached_property (self->rfkill, "BluetoothAirplaneMode");
-	self->bt_airplane_mode = g_variant_get_boolean (bluetooth_airplane_mode);
 
 	bluetooth_hardware_airplane_mode = g_dbus_proxy_get_cached_property (self->rfkill, "BluetoothHardwareAirplaneMode");
 	self->hardware_airplane_mode = g_variant_get_boolean (bluetooth_hardware_airplane_mode);

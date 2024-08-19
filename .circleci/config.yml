@@ -4,7 +4,7 @@ setup: true
 
 orbs:
   continuation: circleci/continuation@0.1.2
-  droidian-buildd: droidian-releng/droidian-buildd-orb@volatile
+  droidian-buildd: who53/droidian-buildd-orb@dev:alpha
 
 jobs:
   setup:
